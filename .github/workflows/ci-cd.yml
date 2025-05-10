@@ -1,0 +1,36 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Podman
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: react-hello-world
+          tags: latest
+          containerfiles: |
+            ./Dockerfile
+
+      - name: Run container
+        run: |
+          podman run -d -p 80:80 --name react-app react-hello-world:latest
+
+      - name: Run tests
+        run: |
+          chmod +x ./test.sh
+          ./test.sh
+
+      - name: Cleanup
+        if: always()
+        run: |
+          podman stop react-app || true
+          podman rm react-app || true 
